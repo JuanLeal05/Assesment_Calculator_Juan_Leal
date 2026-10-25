@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  # Job ids are the status-check names required by the ruleset
-  # (.github/rulesets/main-and-develop.json). Rename both together.
+  # Job names are the status checks required by the repository ruleset
+  # (Settings > Rules > Rulesets). Rename both together.
   backend-tests:
     name: backend-tests
     runs-on: ubuntu-latest
@@ -93,3 +93,39 @@ jobs:
       - name: Show container logs on failure
         if: failure()
         run: docker logs backend
+
+  frontend-image:
+    name: frontend-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Runs npm ci + tsc + vite build inside the image, so type errors fail here.
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          tags: calculator-frontend:${{ github.sha }}
+          load: true
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name frontend -p 5173:8080 calculator-frontend:${{ github.sha }}
+
+          for _ in $(seq 1 20); do
+            [ "$(docker inspect --format '{{.State.Health.Status}}' frontend)" = "healthy" ] && break
+            sleep 2
+          done
+          docker inspect --format '{{.State.Health.Status}}' frontend | grep -qx healthy
+
+          curl --fail --silent http://localhost:5173/ | grep -q '<title>SuperCalculator</title>'
+          # Single-page app fallback: unknown paths must still serve index.html.
+          curl --fail --silent http://localhost:5173/unknown/path | grep -q 'id="root"'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs frontend
