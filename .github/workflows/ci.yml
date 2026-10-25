@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Cancel an older run of the same branch/PR when a new commit arrives.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Job names are the status checks required by the repository ruleset
+  # (Settings > Rules > Rulesets). Rename both together.
+  backend-tests:
+    name: backend-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Fails if any test fails or coverage is below 80% (--cov-fail-under in pyproject.toml).
+      - name: Run tests and coverage gate (Docker test stage)
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          target: test
+          tags: calculator-backend:test
+          load: true
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Extract coverage reports
+        run: |
+          container_id=$(docker create calculator-backend:test)
+          mkdir -p coverage
+          docker cp "$container_id":/app/htmlcov coverage/htmlcov
+          docker cp "$container_id":/app/coverage.xml coverage/coverage.xml
+          docker rm "$container_id"
+
+      - name: Write coverage summary
+        run: |
+          rate=$(grep -o 'line-rate="[0-9.]*"' coverage/coverage.xml | head -1 | grep -o '[0-9.]*')
+          percent=$(awk "BEGIN { printf \"%.2f\", $rate * 100 }")
+          echo "### Backend coverage: ${percent}% (minimum 80%)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/
+          retention-days: 14
+
+  backend-image:
+    name: backend-image
+    needs: backend-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          target: runtime
+          tags: calculator-backend:${{ github.sha }}
+          load: true
+          cache-from: type=gha,scope=backend
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name backend -p 8000:8000 calculator-backend:${{ github.sha }}
+
+          for _ in $(seq 1 20); do
+            [ "$(docker inspect --format '{{.State.Health.Status}}' backend)" = "healthy" ] && break
+            sleep 2
+          done
+          docker inspect --format '{{.State.Health.Status}}' backend | grep -qx healthy
+
+          curl --fail --silent http://localhost:8000/health
+          curl --fail --silent -X POST http://localhost:8000/api/v1/calculate/add \
+            -H 'Content-Type: application/json' -d '{"a": 2, "b": 3}' | grep -q '"result":5.0'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs backend
+
+  frontend-image:
+    name: frontend-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Runs npm ci + tsc + vite build inside the image, so type errors fail here.
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          tags: calculator-frontend:${{ github.sha }}
+          load: true
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name frontend -p 5173:8080 calculator-frontend:${{ github.sha }}
+
+          for _ in $(seq 1 20); do
+            [ "$(docker inspect --format '{{.State.Health.Status}}' frontend)" = "healthy" ] && break
+            sleep 2
+          done
+          docker inspect --format '{{.State.Health.Status}}' frontend | grep -qx healthy
+
+          curl --fail --silent http://localhost:5173/ | grep -q '<title>SuperCalculator</title>'
+          # Single-page app fallback: unknown paths must still serve index.html.
+          curl --fail --silent http://localhost:5173/unknown/path | grep -q 'id="root"'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs frontend
