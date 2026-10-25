@@ -24,7 +24,7 @@ def divide(request: BinaryOperationRequest, service: CalculatorService = Depends
     result = service.divide(request.a, request.b)
     return OperationResponse(result=result)
 
-@router.post("/square_root", response_model=OperationResponse)
+@router.post("/squareRoot", response_model=OperationResponse)
 def square_root(request: UnaryOperationRequest, service: CalculatorService = Depends()):
     result = service.square_root(request.a)
     return OperationResponse(result=result)
