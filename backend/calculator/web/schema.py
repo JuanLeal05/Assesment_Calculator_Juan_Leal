@@ -1,11 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-class BinaryCalculationRequest(BaseModel):
+
+class BinaryOperationRequest(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     a: float
     b: float
 
-class UnaryCalculationRequest(BaseModel):
+
+class UnaryOperationRequest(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     a: float
 
-class CalculationResponse(BaseModel):
+
+class OperationResponse(BaseModel):
     result: float

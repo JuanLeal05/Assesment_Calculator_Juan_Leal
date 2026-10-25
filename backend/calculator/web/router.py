@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
-from backend.calculator.web.schema import BinaryOperationRequest, UnaryOperationRequest, OperationResponse
-from backend.calculator.application.calculate import CalculatorService
+from fastapi import APIRouter, Depends
+from calculator.web.schema import BinaryOperationRequest, UnaryOperationRequest, OperationResponse
+from calculator.application.calculate import CalculatorService
 
 router = APIRouter(prefix="/calculate", tags=["Calculator"])
 

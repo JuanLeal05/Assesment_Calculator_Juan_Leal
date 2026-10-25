@@ -1,5 +1,5 @@
 import math
-from backend.calculator.domain.exceptions import (DivisionByZeroError, NegativeSquareRootError, NonFiniteResultError, ComplexResultError)
+from calculator.domain.exceptions import (DivisionByZeroError, NegativeSquareRootError, NonFiniteResultError, ComplexResultError)
 
 def add(a: float, b: float) -> float:
     return a + b
@@ -21,12 +21,17 @@ def square_root(a: float) -> float:
     return math.sqrt(a)
 
 def power(a: float, b: float) -> float:
-    return a ** b
+    try:
+        return a ** b
+    except ZeroDivisionError:
+        raise DivisionByZeroError("Zero cannot be raised to a negative power.")
+    except OverflowError:
+        raise NonFiniteResultError()
 
 def percent(a: float, b: float) -> float:
     return (a * b) / 100
 
-def validateResult(result: float) -> None:
+def validate_result(result: float) -> None:
     if isinstance(result, complex):
         raise ComplexResultError()
     if not math.isfinite(result):
