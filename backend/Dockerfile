@@ -24,7 +24,8 @@ RUN uv sync --frozen --no-install-project
 COPY calculator ./calculator
 COPY tests ./tests
 # The build fails if any test fails or coverage drops below the threshold.
-RUN pytest
+# HTML/XML reports stay in the image so CI can copy them out.
+RUN pytest --cov-report=html --cov-report=xml
 
 # ---------- runtime: the API (default target) ----------
 FROM base AS runtime
@@ -36,7 +37,7 @@ USER appuser
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --start-interval=2s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 CMD ["uvicorn", "calculator.main:app", "--host", "0.0.0.0", "--port", "8000"]
