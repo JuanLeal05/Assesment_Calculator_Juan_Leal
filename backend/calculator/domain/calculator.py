@@ -27,7 +27,7 @@ def percent(a: float, b: float) -> float:
     return (a * b) / 100
 
 def validateResult(result: float) -> None:
+    if isinstance(result, complex):
+        raise ComplexResultError()
     if not math.isfinite(result):
         raise NonFiniteResultError()
-    if not isinstance(result, complex):
-        raise ComplexResultError()
