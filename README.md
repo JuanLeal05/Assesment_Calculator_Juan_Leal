@@ -278,3 +278,34 @@ Nothing is deployed yet, but the project is set up so the CI can grow into a CD 
 5. Smoke test the deployed `/health` endpoint and the frontend URL.
 
 Branch protection already guarantees that only code that passed the CI reaches `main`, so the CD would only ever deploy tested images.
+
+## Prompts I used
+These are the prompts from my AI-assisted session (Claude Code) that led to changes in the project, in order.
+1. **Backend review**
+   > So far I've build a simple REST API using Python with FastAPI. I need you to double check the flow, starting from the very first entry of the API in main.py, then continue with the web layer, then the application and finally the domain part. I need you to tell me if the flow is complete or if it leaks at some point. Check the flow and if the API is perfectly configured
+
+2. **Backend fixes**
+   > Ok, let's start by patching the blockers, then the leaks and then the configuration gaps.
+
+3. **Backend test suite**
+   > I want your help to create the proper tests as follows:
+   > * Unit tests: Validate the whole mathematic logic
+   > * API integrations test: Validate that FastAPI is correctly receiving the requests, executing the operations and returning the result to the user
+   > * Error handling and validation test: Check what happens if parameters are missing, invalid data is sent, an unknown operation is requested, or an attempt is made to divide by zero (And any of the other exceptions).
+   >
+   > I created a new branch so that later I can merge it just to be cleaner. Do not merge or create a PR.
+
+4. **Backend Dockerfile**
+   > As of right now, I feel like we need to move with the Dockerfile for the Backend. My idea is later to create a docker-compose that runs two containers: One for the front and other for the back so that I can access localhost:5173 and see the front thatwill consume the API. In order to do so I need to execute both containers at the same time, that's what the docker-compose.yml will do later on.
+
+5. **Backend CI**
+   > Now, let's create the CI.yml file in order to finish up the Backend part. In this .yml for now, we'll build the Docker container for the Backend and we'll check the coverage so that it can be merged into develop. This CI is the first step of what will evolve into a CD.yml later in case anything gets deployed
+
+6. **Frontend**
+   > Now let's create a pretty simple but functional frontend, a simple page with a title like "SuperCalculator" and right below it, there will be a card where the user will generate his input and the button with which he'll execute the operation. The idea is that the card changes across the multiple operations. The front must capture the errors given by the API and show them to the user by placing a simple red rectangle above the card. I want a minimalistic frontend and make sure to divide the folder accordingly so that App.tsx is not overloaded, you must create a hook using TypeScript that has to handle the API call and will be called inside the component
+
+7. **Frontend Dockerfile and docker-compose**
+   > Let's create the Dockerfile for the front so that it can be used alongside the backend with a docker-compose that will execute both containers. Wirte the docker-compose.yml in the root folder so that it can be executed using docker compose up -d --build making that the front is accessible and the API as well.
+
+8. **Frontend in the CI**
+   > Now let's add the front to the CI.yml so the check would be to verify if the frontend container is created successfully
