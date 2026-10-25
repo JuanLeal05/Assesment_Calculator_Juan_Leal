@@ -1,0 +1,110 @@
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.calculator__card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.calculator__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.calculator__inputs {
+  display: grid;
+  gap: 12px;
+}
+
+.calculator__inputs--2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.calculator__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.calculator__field input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--bg);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.calculator__field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.calculator__submit {
+  padding: 12px;
+  border: none;
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calculator__submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.calculator__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.calculator__result {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 2.5rem;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.calculator__result strong {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+@media (max-width: 400px) {
+  .calculator__card {
+    padding: 16px;
+  }
+
+  .calculator__inputs--2 {
+    grid-template-columns: 1fr;
+  }
+}
